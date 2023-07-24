@@ -43,28 +43,13 @@ public final class AuroraReplicasDiscoverer {
 
     private List<String> fetchReplicasServerIds(Connection connection) throws SQLException {
         List<String> ids = new LinkedList<>();
-        final String sql = "SELECT server_id, durable_lsn, current_read_lsn, feedback_xmin, " +
-            "round(extract(milliseconds from (now()-last_update_timestamp))) as state_lag_in_msec, replica_lag_in_msec " +
+        final String sql = "SELECT server_id " +
             "FROM aurora_replica_status() " +
             "WHERE session_id != 'MASTER_SESSION_ID' and last_update_timestamp > NOW() - INTERVAL '5 minutes';";
         try (ResultSet rs =
                  connection.prepareStatement(sql).executeQuery()) {
             while (rs.next()) {
                 String serverId = rs.getString("server_id");
-                long replicaLagInMs = rs.getLong("replica_lag_in_msec");
-                long durableLsn = rs.getLong("durable_lsn");
-                long currentReadLsn = rs.getLong("current_read_lsn");
-                long feedbackXmin = rs.getLong("feedback_xmin");
-                long stateLag = rs.getLong("state_lag_in_msec");
-                logger.debug(String.format(
-                    "server_id=%s, replica_lag_in_ms=%d, durable_lsn=%d, current_read_lsn=%d, feedback_xmin=%d, state_lag=%d",
-                    serverId,
-                    replicaLagInMs,
-                    durableLsn,
-                    currentReadLsn,
-                    feedbackXmin,
-                    stateLag
-                ));
                 ids.add(serverId);
             }
         }
